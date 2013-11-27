@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>CGI Project Tracking</title>
+	<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/resources/dojo.css" />
+	<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dijit/themes/claro/claro.css" />
+	<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/grid/resources/Grid.css" />
+	<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojox/grid/resources/claroGrid.css" />
+	<style>
+		/*Grid needs an explicit height by default --Dojo Recomendation*/
+		#gridDiv {
+			height: 20em;
+		}
+	</style>
+</head>
+<body>
+
+	<div id="gridDiv"></div>
+
+	<script>
+		//Load required packages here, instead of loading all.
+		var dojoConfig = {
+			async: true
+		};
+	</script>
+	<script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js"></script>
+	<script>
+	 require([
+		'dojo/_base/lang',
+		'dojo/aspect',
+		'dojox/grid/DataGrid',
+		'dojox/data/QueryReadStore',
+		'dojo/domReady!'
+	], function (lang, aspect, DataGrid, QueryReadStore) {
+
+		var store = new QueryReadStore({ url: "22340-example.json" });
+
+		// NOTE: It is best to avoid relying on private members,
+		// but this appears to be the most straightforward (and possibly only) way
+		// to accommodate including error meta data with items returned by the store.
+		aspect.before(store, "_xhrFetchHandler", function (data, request) {
+			var originalOnComplete = request.onComplete;
+		
+			// Define an onComplete intermediary that adds an errors property
+			// to the items passed to onComplete
+			request.onComplete = function (items, request) {
+				items.errors = data.errors;
+				originalOnComplete(items, request);
+			};
+		}); 
+
+		var grid = new DataGrid({
+			id: 'grid',
+			store: store,
+			structure: [[
+				{ 'name': 'Column 1', 'field': 'id', 'width': '100px' },
+				{ 'name': 'Column 2', 'field': 'col2', 'width': '100px' },
+				{ 'name': 'Column 3', 'field': 'col3', 'width': '200px' },
+				{ 'name': 'Column 4', 'field': 'col4', 'width': '150px' }
+			]]
+		});
+
+		// The items passed to _onFetchComplete now have an errors property
+		aspect.before(grid, "_onFetchComplete", function (items, request) {
+			var errors = items.errors;
+			console.log(errors);
+			for (var i = 0; i < errors.length; ++i) {
+				console.log(i);
+				//console.error(errors[i]);
+			}
+		});
+
+		grid.placeAt("gridDiv");
+		grid.startup();
+	});
+	</script>
+</body>
+</html>
